@@ -1,0 +1,138 @@
+---
+title: "Plotly Interactive Graphics"
+author: "Connor Guest"
+date: "6/1/2019"
+output: 
+  html_document:
+    code_folding: "hide"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r, include = FALSE}
+# install.packages("plotly")
+# install.packages("tidyverse")
+
+library(plotly)
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(readxl)
+```
+
+```{r, include = FALSE}
+msci <- read_csv("MSCI.csv")
+
+names(msci)
+head(msci)
+```
+
+### Learning Plotly, a library for interactive graphics
+
+#### Here is my first graphic
+
+In this graph we are plotting the MSCI data taken from here: https://finance.yahoo.com/quote/MSCI/history?period1=1527807600&period2=1559343600&interval=1d&filter=history&frequency=1d
+
+```{r plotly line chart}
+# Create a times series plot of Open against Date
+msci %>% 
+    plot_ly(x = ~Date, y = ~Open) %>% 
+    add_lines()
+```
+
+```{r}
+# Create a scatterplot with Date on the x-axis and Volume on the y-axis
+msci %>% 
+  plot_ly(x = ~Date, y = ~Volume) %>%
+  add_markers()
+```
+
+Happiness Report
+
+```{r, include = FALSE}
+happy <- read_excel("HappinessData.xls")
+countries <- read_csv("countries of the world.csv")
+
+countries <- rename(countries, country = "Country", population = "Population", region = "Region", gdp = "GDP ($ per capita)" )
+countries <- select(countries, country, population, region, gdp)
+countries <- countries %>%
+              mutate(
+                income = case_when(
+                  gdp > 16000 ~ "high",
+                  gdp > 9000 ~ "upper-middle",
+                  gdp > 2000 ~ "lower-middle",
+                  TRUE        ~ "low"
+                )
+              )
+
+
+summary(happy)
+str(happy)
+glimpse(happy)
+names(happy)
+
+glimpse(countries)
+
+# join happy data set with countries 
+
+happycountries <- happy %>% 
+                  left_join(countries, by = c("Country name" = "country"))
+
+
+happycountries <- rename(happycountries, country = "Country name", happiness = "Life Ladder", life.expectancy = "Healthy life expectancy at birth", log.gdp = "Log GDP per capita", gdp.per.capita = "gdp")
+
+```
+
+```{r}
+# Create a coded scatterplot of happiness vs. life.expectancy for 2018
+
+happycountries %>%
+  filter(Year == 2018) %>% 
+  plot_ly(x = ~life.expectancy, y = ~happiness) %>%
+  add_markers(color = ~region, size = ~log.gdp)
+
+```
+
+```{r}
+# Plotting symbols and polishing the graphic with tooltip and labels
+happycountries %>%
+  filter(Year == 2018) %>%
+  plot_ly(x = ~life.expectancy, y = ~happiness,
+  hoverinfo = "text",
+  text = ~paste("Country: ", country,
+  "<br> Income: ", income,
+  "<br> Happiness: ", round(happiness, 2),
+  "<br> Life Expectancy: ", round(life.expectancy, 2),
+  "<br> GDP Per Capita: ", round(gdp.per.capita, 2))) %>%
+  add_markers(symbol = ~income, 
+              symbols = c("circle-open", "square-open", "star-open", "x-thin-open")) %>%
+  layout(xaxis = list(title = "Life Expectancy"),
+         yaxis = list(title = "National Happiness Score"))
+
+```
+
+```{r}
+library(gapminder)
+gapminder
+```
+
+```{r, include = false}
+
+# Create a scatter plot of house_price over time by state
+us_economy %>%
+  filter(year == 2017) %>%
+  plot_ly(x = ~gdp, y = ~house_price) %>%
+  add_markers(size = ~population, 
+              color = ~region, 
+              marker = list(sizemode = "diameter"))
+
+# Create a line chart of house_price over time by state
+us_economy %>%
+  filter(year >= 2000) %>%
+  group_by(state) %>%
+  plot_ly(x = ~year, y = ~house_price) %>%
+  add_lines()
+```
+
