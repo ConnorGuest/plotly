@@ -113,12 +113,12 @@ happycountries %>%
 
 ```
 
-```{r}
-library(gapminder)
-gapminder
+Import new data set
+```{r, include=FALSE}
+us_economy <- read_csv("state_economic_data.csv")
 ```
 
-```{r, include = false}
+```{r}
 
 # Create a scatter plot of house_price over time by state
 us_economy %>%
@@ -135,4 +135,101 @@ us_economy %>%
   plot_ly(x = ~year, y = ~house_price) %>%
   add_lines()
 ```
+Adding Animation
+
+```{r}
+# Create an animated bubble chart of house_price against gdp
+us_economy %>%
+  plot_ly(
+    x = ~gdp, y = ~house_price,
+    hoverinfo = "text", text = ~state
+  ) %>%
+  add_markers(
+    size = ~population, color = ~region, 
+    frame = ~year, ids = ~state,
+    marker = list(sizemode = "diameter", sizeref = 2) # size ref changes the size of the bubble
+  ) %>%
+  layout(
+    xaxis = list(title = "Real GDP (millions USD)", type = "log"),
+    yaxis = list(title = "Housing price index")
+  )
+```
+```{r, include=FALSE}
+# Factors as frames
+# Time is not the only type of variable that can be used to specify the frames of an animation. You can also create an animation that cycles through subplots created by factors rather than using a grid layout.
+# 
+# In this exercise, you will adapt your answer from the previous question to create an animation that cycles through bubble charts for each region in 2017.
+# 
+# Note: The default settings for the animation make it go very quickly. In the next lesson, you'll learn how to adjust the speed. For now, you can use the slider bar to navigate between regions if you want to investigate the relationships.
+# 
+# plotly and the us_economy data set have already been loaded.
+```
+
+
+
+```{r}
+# Animate a bubble chart of house_price against gdp over region
+ani <- us_economy %>%
+  filter(year == 2017) %>%
+  plot_ly(x = ~gdp, y = ~house_price) %>%
+  add_markers(size = ~population, color = ~region, 
+              frame = ~region, ids = ~state,
+              marker = list(sizemode = "diameter"))
+```
+
+Animation Attributes 
+https://github.com/plotly/plotly.js/blob/master/src/plots/animation_attributes.js
+```{r}
+# ani is the plot created above
+ani %>% 
+   animation_opts(
+     frame = 2000, 
+     transition = 300, #this is how long the frame takes
+     easing = "elastic"
+   ) %>%
+   animation_slider( 
+     currentvalue = list(
+       prefix = NULL, # this get rid of the slider 
+       font = list(color = "red") # changes the color on the slider
+     )
+   ) %>%   
+   layout(
+     xaxis = list(title = "Real GDP (millions USD)"),
+     yaxis = list(title = "Housing price index")
+   )
+```
+
+Adding background text
+
+```{r}
+# Add the year as background text and remove the slider
+us_economy %>%
+  plot_ly(x = ~gdp, y = ~house_price, hoverinfo = "text", text = ~state) %>%
+  add_text(x = 200000, y = 450, text = ~year, frame = ~year,                  # this is where the code is
+           textfont = list(color = toRGB("gray80"), size = 150)) %>%
+  add_markers(size = ~population, color = ~region, 
+              frame = ~year, ids = ~state,
+              marker = list(sizemode = "diameter", sizeref = 3)) %>%
+  layout(xaxis = list(title = "Real GDP (millions USD)", type = "log"),
+         yaxis = list(title = "Housing price index")) %>%
+  animation_slider(hide = TRUE)
+```
+Layering
+Plotting the baseline - keeping dots in the background
+You can use different data sets for different layers in plotly, just like you can in ggplot2. This is a useful strategy when you want to display a baseline time point (or group) in an animation. Here is an animated scatterplot of housing price index against real GDP, keeping the 1997 data points in the background.
+
+```{r}
+# extract the 1997 data
+us1997 <- us_economy %>%
+  filter(year == 1997)
+
+# create an animated scatterplot with baseline from 1997
+us_economy %>%
+  plot_ly(x = ~gdp, y = ~house_price) %>%
+  add_markers(data = us1997, marker = list(color = toRGB("gray60"), opacity = 0.5)) %>%
+  add_markers(frame = ~year, ids = ~state, data = us_economy, showlegend = FALSE, alpha = 0.5) %>%
+  layout(xaxis = list(type = "log"))
+```
+
+
 
